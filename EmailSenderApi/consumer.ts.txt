@@ -1,0 +1,32 @@
+import amqp from "amqplib";
+
+// const RabbitMQ_URL = "amqp://localhost:5672";
+const Queue = "hello";
+
+const RabbitMQ_Connection = {
+    hostname: "localhost",
+    username: "root",
+    password: "root",
+    protocol: "amqp",
+};
+
+const main = async () => {
+    const connection = await amqp.connect(RabbitMQ_Connection);
+
+    const channel = await connection.createChannel()
+        .then(ch => {
+            ch.prefetch(1)
+            return ch;
+        });
+
+    await channel.assertQueue(Queue, { durable: false })
+        .then(({ queue, messageCount, consumerCount }) => {
+            console.log(` [*] Waiting for messages in Queue: ${queue}. To exit press CTRL+C`);
+        });
+
+    channel.consume(Queue, (msg: any) => {
+        console.log(" [x] Received %s", msg.content.toString());
+    }, { noAck: true });
+};
+
+main();
